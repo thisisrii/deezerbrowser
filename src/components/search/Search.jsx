@@ -55,7 +55,7 @@ async function getSuggestions(value) {
   /* DO API CALL HERE */
 
   if (inputLength <= 3)
-    return [{ 'artist': 'Eni' }];
+    return [];
   else {
     let array = await searchByArtist(value);
     let names = [];
@@ -64,7 +64,6 @@ async function getSuggestions(value) {
     }
     console.log('names', names);
   }
-
 }
 
 function getSuggestionValue(suggestion) {
