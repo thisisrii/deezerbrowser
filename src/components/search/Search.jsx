@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import deburr from 'lodash/deburr';
 import Autosuggest from 'react-autosuggest';
 import match from 'autosuggest-highlight/match';
@@ -7,9 +7,8 @@ import TextField from '@material-ui/core/TextField';
 import Paper from '@material-ui/core/Paper';
 import MenuItem from '@material-ui/core/MenuItem';
 import { makeStyles } from '@material-ui/core/styles';
-import { searchByArtist } from '../../services/SearchService';
-
-let suggestions = [];
+import { searchForSuggestions } from '../../services/SearchService';
+import { Button, Grid } from '@material-ui/core';
 
 function renderInputComponent(inputProps) {
   const { classes, inputRef = () => { }, ref, ...other } = inputProps;
@@ -51,19 +50,19 @@ function renderSuggestion(suggestion, { query, isHighlighted }) {
 async function getSuggestions(value) {
   const inputValue = deburr(value.trim()).toLowerCase();
   const inputLength = inputValue.length;
-
+  let names = [];
   /* DO API CALL HERE */
 
   if (inputLength <= 3)
     return [];
   else {
-    let array = await searchByArtist(value);
-    let names = [];
+    let array = await searchForSuggestions(value);
     for (let x in array) {
       await names.push({ 'artist': array[x].name })
     }
-    console.log('names', names);
   }
+
+  return names;
 }
 
 function getSuggestionValue(suggestion) {
@@ -72,8 +71,9 @@ function getSuggestionValue(suggestion) {
 
 const useStyles = makeStyles(theme => ({
   root: {
-    height: 250,
+    height: 90,
     flexGrow: 1,
+    marginTop: 35,
   },
   container: {
     position: 'relative',
@@ -93,23 +93,23 @@ const useStyles = makeStyles(theme => ({
     padding: 0,
     listStyleType: 'none',
   },
-  divider: {
-    height: theme.spacing(2),
-  },
+  button: {
+    padding: '10px 30px',
+  }
 }));
 
-export default function IntegrationAutosuggest() {
+export default function AutoCompleteSearch(props) {
   const classes = useStyles();
-  const [anchorEl, setAnchorEl] = React.useState(null);
   const [state, setState] = React.useState({
     single: '',
   });
   const [stateSuggestions, setSuggestions] = React.useState([]);
 
   const handleSuggestionsFetchRequested = ({ value }) => {
-    suggestions = getSuggestions(value).then(response => { return response });
+    getSuggestions(value).then((response) => {
+      setSuggestions(response);
+    });
 
-    setSuggestions(suggestions);
   };
 
   const handleSuggestionsClearRequested = () => {
@@ -123,6 +123,12 @@ export default function IntegrationAutosuggest() {
     });
   };
 
+  const handleSearch = () => {
+    console.log('searching....')
+    props.handleSearch(state['single']);
+
+  }
+
   const autosuggestProps = {
     renderInputComponent,
     suggestions: stateSuggestions,
@@ -134,29 +140,35 @@ export default function IntegrationAutosuggest() {
 
   return (
     <div className={classes.root}>
-      <Autosuggest
-        {...autosuggestProps}
-        inputProps={{
-          classes,
-          id: 'search',
-          label: 'Search for Album',
-          placeholder: 'Search here',
-          value: state.single,
-          onChange: handleChange('single'),
-        }}
-        theme={{
-          container: classes.container,
-          suggestionsContainerOpen: classes.suggestionsContainerOpen,
-          suggestionsList: classes.suggestionsList,
-          suggestion: classes.suggestion,
-        }}
-        renderSuggestionsContainer={suggestions => (
-          <Paper {...suggestions.containerProps} square>
-            {suggestions.children}
-          </Paper>
-        )}
-      />
-      <div className={classes.divider} />
+      <Grid container spacing={2}>
+        <Grid item xs>
+          <Autosuggest
+            {...autosuggestProps}
+            inputProps={{
+              classes,
+              id: 'search',
+              label: 'Search for Album',
+              placeholder: 'Search here',
+              value: state.single,
+              onChange: handleChange('single'),
+            }}
+            theme={{
+              container: classes.container,
+              suggestionsContainerOpen: classes.suggestionsContainerOpen,
+              suggestionsList: classes.suggestionsList,
+              suggestion: classes.suggestion,
+            }}
+            renderSuggestionsContainer={suggestions => (
+              <Paper {...suggestions.containerProps} square>
+                {suggestions.children}
+              </Paper>
+            )}
+          />
+        </Grid>
+        <Grid item xs>
+          <Button className={classes.button} variant="contained" color="primary" onClick={handleSearch}>Search</Button>
+        </Grid>
+      </Grid>
     </div>
   );
 }
